@@ -343,7 +343,7 @@
 
                 // MASLA YAHAN THA! URL ko tukron mein tod diya gaya hai taake copy paste mein brackets na aayein
                 const apiDomain = "https://" + "generativelanguage.googleapis.com";
-                const apiPath = "/v1beta/models/gemini-1.5-flash:generateContent?key=";
+                const apiPath = "/v1beta/models/gemini-1.5-flash-latest:generateContent?key=";
                 const apiUrl = apiDomain + apiPath + apiKey;
 
                 const response = await fetch(apiUrl, {
