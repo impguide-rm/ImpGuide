@@ -334,9 +334,9 @@
                   ]
                 }`;
 
-                // PERFECT MODEL FIX: gemini-1.5-flash (Lightning fast and supported everywhere)
+                // PERFECT MODEL FIX: gemini-3.6-flash (Lightning fast and supported everywhere)
                 const apiDomain = "https://" + "generativelanguage.googleapis.com";
-                const apiPath = "/v1beta/models/gemini-1.5-flash:generateContent?key=";
+                const apiPath = "/v1beta/models/gemini-3.6-flash:generateContent?key=";
                 const apiUrl = apiDomain + apiPath + apiKey;
 
                 const response = await fetch(apiUrl, {
