@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RMCEDATA - GD Extractor Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- SheetJS Library for Excel Export/Import -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    </style>
+</head>
+<body class="bg-[#f3f4f6] p-4 md:p-8 text-gray-800">
+
+    <div class="max-w-[98%] mx-auto space-y-6">
+
+        <!-- Upload Area -->
+        <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+            <div id="dropzone" class="border-2 border-dashed border-gray-300 rounded-lg p-10 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition cursor-pointer">
+                <input type="file" id="gdFileInput" class="hidden" accept=".pdf">
+                <div class="bg-blue-500 text-white rounded p-2 mb-3">
+                    <i class="fa-solid fa-arrow-up"></i>
+                </div>
+                <h3 id="fileNameDisplay" class="font-bold text-lg text-gray-700">Nayi GD PDF yahan attach karein</h3>
+                <p class="text-sm text-gray-500 mt-1">Aap jitni GDs chahein baari baari attach kar sakte hain.</p>
+            </div>
+
+            <div class="flex flex-wrap justify-between items-center mt-6 gap-4">
+                <div class="text-sm">
+                    <span class="text-gray-600">Ready for next GD(s)</span>
+                    <a href="#" id="clearSelection" class="text-red-500 hover:underline ml-2">Clear Selection</a>
+                </div>
+                <button id="extractBtn" class="bg-[#10b981] hover:bg-green-600 text-white px-5 py-2 rounded font-semibold text-sm shadow-sm flex items-center gap-2">
+                    <i class="fa-solid fa-cog"></i> Extract from PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Header & Controls -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-5 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">Extracted Items Master Database</h2>
+                    <p class="text-xs text-gray-500">Total Items in Memory: <span id="recordCount" class="font-bold text-blue-600">0</span></p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <!-- Excel Controls -->
+                    <input type="file" id="excelFileInput" class="hidden" accept=".xlsx, .xls">
+                    <button id="importExcelBtn" class="bg-[#f59e0b] hover:bg-orange-600 text-white px-4 py-1.5 rounded text-sm font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-file-import"></i> Upload Excel DB
+                    </button>
+                    <button id="exportExcelBtn" class="bg-[#3b82f6] hover:bg-blue-600 text-white px-4 py-1.5 rounded text-sm font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-file-excel"></i> Save to Excel
+                    </button>
+                    <!-- Settings Button to reset API Key if needed -->
+                    <button id="resetKeyBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-1.5 rounded text-sm font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-key"></i> Reset API Key
+                    </button>
+                    <button class="bg-[#8b5cf6] hover:bg-purple-600 text-white px-4 py-1.5 rounded text-sm font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Sync to Supabase
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4">
+                <div class="overflow-x-auto bg-white rounded border">
+                    <table class="w-full text-xs text-left whitespace-nowrap">
+                        <thead class="text-gray-400 uppercase bg-gray-50 border-b">
+                            <tr>
+                                <th class="px-3 py-2 w-10">#</th>
+                                <th class="px-3 py-2">HS Code</th>
+                                <th class="px-3 py-2 min-w-[250px]">Description</th>
+                                <th class="px-3 py-2">Qty</th>
+                                <th class="px-3 py-2">Decl. Val</th>
+                                <th class="px-3 py-2">Assessed Val</th>
+                                <th class="px-3 py-2 bg-blue-50">CD %</th>
+                                <th class="px-3 py-2 bg-blue-50">CD Amt</th>
+                                <th class="px-3 py-2 bg-purple-50">ACD %</th>
+                                <th class="px-3 py-2 bg-purple-50">ACD Amt</th>
+                                <th class="px-3 py-2 bg-yellow-50">RD %</th>
+                                <th class="px-3 py-2 bg-yellow-50">RD Amt</th>
+                                <th class="px-3 py-2 bg-red-50">ST %</th>
+                                <th class="px-3 py-2 bg-red-50">ST Amt</th>
+                                <th class="px-3 py-2 bg-orange-50">AST %</th>
+                                <th class="px-3 py-2 bg-orange-50">AST Amt</th>
+                                <th class="px-3 py-2 bg-teal-50">IT %</th>
+                                <th class="px-3 py-2 bg-teal-50">IT Amt</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsTbody">
+                            <tr id="emptyPlaceholder">
+                                <td colspan="18" class="px-3 py-4 text-center text-gray-500">
+                                    Koi data nahi. Excel upload karen ya nayi PDF extract karen...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. CONFIG & SECURE API KEY LOGIC ---
+        let GEMINI_API_KEY = localStorage.getItem('myGeminiKey');
+
+        if (!GEMINI_API_KEY) {
+            GEMINI_API_KEY = prompt("App use karne ke liye apni Gemini API Key enter karen:\n(Yeh key sirf aapke browser mein secure save hogi)");
+            if (GEMINI_API_KEY) {
+                localStorage.setItem('myGeminiKey', GEMINI_API_KEY.trim());
+            } else {
+                alert("API Key ke bina extraction kaam nahi karegi! Page refresh kar ke dobara enter karen.");
+            }
+        }
+
+        // Reset API Key Button Logic
+        document.getElementById('resetKeyBtn').addEventListener('click', () => {
+            let newKey = prompt("Nayi Gemini API Key enter karen:");
+            if (newKey) {
+                localStorage.setItem('myGeminiKey', newKey.trim());
+                GEMINI_API_KEY = newKey.trim();
+                alert("API Key successfully update ho gayi hai!");
+            }
+        });
+        
+        let masterDatabase = []; 
+        let processedGDNumbers = new Set();
+        let processedFileNames = new Set();
+
+        // --- 2. UI Click Events for PDF ---
+        document.getElementById('dropzone').addEventListener('click', () => document.getElementById('gdFileInput').click());
+
+        document.getElementById('gdFileInput').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                const fileName = e.target.files[0].name;
+                if (processedFileNames.has(fileName)) {
+                    alert(`Yeh file "${fileName}" pehle hi extract ho chuki hai! Duplicate rok diya gaya hai.`);
+                    this.value = ''; return;
+                }
+                document.getElementById('fileNameDisplay').innerText = fileName;
+                document.getElementById('fileNameDisplay').classList.add('text-green-600');
+            }
+        });
+
+        document.getElementById('clearSelection').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('gdFileInput').value = ''; 
+            document.getElementById('fileNameDisplay').innerText = 'Nayi GD PDF yahan attach karein';
+            document.getElementById('fileNameDisplay').classList.remove('text-green-600');
+        });
+
+        // --- 3. EXCEL IMPORT / EXPORT LOGIC ---
+        document.getElementById('importExcelBtn').addEventListener('click', () => document.getElementById('excelFileInput').click());
+        
+        document.getElementById('excelFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                
+                let addedCount = 0;
+                jsonData.forEach(row => {
+                    const gdNo = row['GD Number'];
+                    if (gdNo && !processedGDNumbers.has(gdNo)) {
+                        masterDatabase.push(row);
+                    }
+                });
+                
+                // Re-build set to avoid duplicates
+                processedGDNumbers.clear();
+                masterDatabase.forEach(r => processedGDNumbers.add(r['GD Number']));
+                
+                alert(`Excel file successfully import ho gayi hai.`);
+                renderTableUI();
+            };
+            reader.readAsArrayBuffer(file);
+            this.value = ''; 
+        });
+
+        document.getElementById('exportExcelBtn').addEventListener('click', function() {
+            if(masterDatabase.length === 0) {
+                alert('Export karne ke liye koi data nahi hai!'); return;
+            }
+            const worksheet = XLSX.utils.json_to_sheet(masterDatabase);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "GD_Data");
+            XLSX.writeFile(workbook, "Master_GD_Database.xlsx");
+        });
+
+        // --- 4. RENDER UI (GROUPED VIEW) ---
+        function renderTableUI() {
+            const tbody = document.getElementById('itemsTbody');
+            tbody.innerHTML = ''; 
+            
+            document.getElementById('recordCount').innerText = masterDatabase.length;
+
+            if(masterDatabase.length === 0) {
+                tbody.innerHTML = `<tr id="emptyPlaceholder"><td colspan="18" class="px-3 py-4 text-center text-gray-500">Koi data nahi...</td></tr>`;
+                return;
+            }
+
+            let currentGD = null;
+            let itemIndex = 1;
+
+            masterDatabase.forEach((item) => {
+                // Agar GD Number change hua hai, toh nayi Master Row banayen
+                if (item['GD Number'] !== currentGD) {
+                    currentGD = item['GD Number'];
+                    itemIndex = 1; // Nayi GD ke items 1 se shuru honge
+                    
+                    const masterRow = `
+                        <tr class="bg-gray-200 border-b-2 border-gray-300">
+                            <td colspan="18" class="px-4 py-3 font-semibold text-gray-800 text-sm">
+                                <i class="fa-solid fa-file-invoice text-red-500 mr-2"></i> GD No: <span class="text-blue-600">${currentGD}</span> 
+                                <span class="mx-2">|</span> Importer: ${item['Importer'] || '-'}
+                            </td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', masterRow);
+                }
+
+                // Item detail row (Bina GD Number aur Importer ke)
+                const row = `
+                    <tr class="border-b hover:bg-gray-100 transition">
+                        <td class="px-3 py-2 text-gray-500 font-medium">${itemIndex++}</td>
+                        <td class="px-3 py-2 font-medium text-gray-800">${item['HS Code'] || '-'}</td>
+                        <td class="px-3 py-2 truncate max-w-[250px]" title="${item['Description'] || ''}">${item['Description'] || '-'}</td>
+                        <td class="px-3 py-2">${item['Qty'] || '-'}</td>
+                        <td class="px-3 py-2">${item['Decl. Val'] || '-'}</td>
+                        <td class="px-3 py-2 font-semibold">${item['Assessed Val'] || '-'}</td>
+                        
+                        <td class="px-3 py-2 bg-blue-50/50">${item['CD %'] || '-'}</td>
+                        <td class="px-3 py-2 bg-blue-50/50">${item['CD Amt'] || '-'}</td>
+                        
+                        <td class="px-3 py-2 bg-purple-50/50">${item['ACD %'] || '-'}</td>
+                        <td class="px-3 py-2 bg-purple-50/50">${item['ACD Amt'] || '-'}</td>
+                        
+                        <td class="px-3 py-2 bg-yellow-50/50">${item['RD %'] || '-'}</td>
+                        <td class="px-3 py-2 bg-yellow-50/50">${item['RD Amt'] || '-'}</td>
+                        
+                        <td class="px-3 py-2 bg-red-50/50">${item['ST %'] || '-'}</td>
+                        <td class="px-3 py-2 bg-red-50/50">${item['ST Amt'] || '-'}</td>
+                        
+                        <td class="px-3 py-2 bg-orange-50/50">${item['AST %'] || '-'}</td>
+                        <td class="px-3 py-2 bg-orange-50/50">${item['AST Amt'] || '-'}</td>
+
+                        <td class="px-3 py-2 bg-teal-50/50">${item['IT %'] || '-'}</td>
+                        <td class="px-3 py-2 bg-teal-50/50">${item['IT Amt'] || '-'}</td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        // --- 5. PDF EXTRACTION & DATA INTEGRATION ---
+        const fileToBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader(); reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = error => reject(error);
+        });
+
+        async function extractDataFromPDF(file) {
+            try {
+                const base64PDF = await fileToBase64(file);
+                const promptText = `Extract data from this Pakistan Customs Goods Declaration (GD) PDF strictly using the provided column numbers. Return ONLY a valid JSON object. Do not include markdown tags.
+                {
+                    "master": { "gd_number": "Col 58 MACHINE NO", "importer": "Col 10", "ntn": "Col 14", "bl_no": "Col 23", "total_duties": "Col 60" },
+                    "items": [
+                        { "hs_code": "Col 41", "description": "Col 42", "quantity": "Col 38(b)", "declared_value": "Col 43 Declared", "assessed_value": "Col 43 Assessed", "cd_percent": "Col 47 where Col 46 is CD", "cd_amount": "Col 48 where Col 46 is CD", "acd_percent": "Col 47 where Col 46 is ACD", "acd_amount": "Col 48 where Col 46 is ACD", "rd_percent": "Col 47 where Col 46 is RD", "rd_amount": "Col 48 where Col 46 is RD", "st_percent": "Col 47 where Col 46 is ST", "st_amount": "Col 48 where Col 46 is ST", "ast_percent": "Col 47 where Col 46 is AST", "ast_amount": "Col 48 where Col 46 is AST", "it_percent": "Col 47 where Col 46 is IT", "it_amount": "Col 48 where Col 46 is IT" }
+                    ]
+                }`;
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ contents: [{ parts: [{ inlineData: { mimeType: "application/pdf", data: base64PDF } }, { text: promptText } ] }] })
+                });
+
+                const data = await response.json();
+                if (!response.ok) { 
+                    if(data.error?.message.includes('API key not valid')) {
+                        alert("API Key galat hai! Kripya 'Reset API Key' button dabayen aur sahi key enter karen.");
+                    } else {
+                        alert(`API Error: ${data.error?.message || 'Unknown'}`); 
+                    }
+                    return null; 
+                }
+
+                const cleanText = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+                return JSON.parse(cleanText);
+
+            } catch (error) { console.error("Error:", error); alert("Extraction failed."); return null; }
+        }
+
+        document.getElementById('extractBtn').addEventListener('click', async () => {
+            const fileInput = document.getElementById('gdFileInput'); 
+            if (fileInput.files.length === 0) { alert("Pehle ek GD PDF file attach karen."); return; }
+            if (!GEMINI_API_KEY) { alert("API Key missing hai! Page refresh karen."); return; }
+            
+            const currentFile = fileInput.files[0];
+            const btn = document.getElementById('extractBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Extracting...';
+            
+            const extractedData = await extractDataFromPDF(currentFile);
+            
+            if (extractedData && extractedData.master) {
+                const gdNo = extractedData.master.gd_number;
+                
+                if (processedGDNumbers.has(gdNo)) {
+                    alert(`Yeh GD Number (${gdNo}) database mein pehle se majood hai! Data append nahi kiya gaya.`);
+                } else {
+                    const items = extractedData.items || [];
+                    items.forEach(item => {
+                        masterDatabase.push({
+                            'GD Number': gdNo,
+                            'Importer': extractedData.master.importer || '-',
+                            'HS Code': item.hs_code || '-',
+                            'Description': item.description || '-',
+                            'Qty': item.quantity || '-',
+                            'Decl. Val': item.declared_value || '-',
+                            'Assessed Val': item.assessed_value || '-',
+                            'CD %': item.cd_percent || '-', 'CD Amt': item.cd_amount || '-',
+                            'ACD %': item.acd_percent || '-', 'ACD Amt': item.acd_amount || '-',
+                            'RD %': item.rd_percent || '-', 'RD Amt': item.rd_amount || '-',
+                            'ST %': item.st_percent || '-', 'ST Amt': item.st_amount || '-',
+                            'AST %': item.ast_percent || '-', 'AST Amt': item.ast_amount || '-',
+                            'IT %': item.it_percent || '-', 'IT Amt': item.it_amount || '-'
+                        });
+                    });
+                    
+                    processedGDNumbers.add(gdNo);
+                    processedFileNames.add(currentFile.name);
+                    renderTableUI();
+                }
+            }
+            btn.innerHTML = originalText;
+        });
+    </script>
+</body>
+</html>
